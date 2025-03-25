@@ -5,16 +5,12 @@
 }
 
 canvas {
-    /* position: absolute;
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%; */
     margin: 10px;
 }
 
-/* #canvas {
-    display: none;
-} */
+#mainCanvas {
+    filter: blur(0.7px);
+}
 
 #canvases {
     display: flex;
@@ -27,8 +23,38 @@ canvas {
     width: fit-content;
 }
 
+.row-flex {
+    flex-direction: row;
+}
+
+.options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    margin: 20px;
+    padding: 20px;
+    border: 3px solid black;
+    justify-content: space-evenly;
+}
+
+.option {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    border: 9px double black;
+    padding: 20px 40px;
+    margin: 10px;
+    width: 425px;
+}
+
+.option h1 {
+    font-family: monospace;
+    font-size: 25px;
+    margin: 0 10px;
+    padding: 0;
+}
+
 .container {
-    margin: 50px auto;
+    margin: 10px auto;
     width: fit-content;
     display: flex;
     font-family: monospace;
@@ -39,6 +65,11 @@ canvas {
     margin: 10px;
 }
 
-.container input {
+.container input[type="range"] {
     width: 250px;
+}
+
+.container input[type="color"] {
+    width: 40px;
+    height: 40px;
 }

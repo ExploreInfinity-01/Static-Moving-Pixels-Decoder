@@ -1,4 +1,6 @@
 import { createCanvasRecorder } from "./recorder.js";
+import options from "./options.js";
+import { lerp } from "./utils.js";
 
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -30,11 +32,11 @@ const recordingFrameRate = 30;
 const recorder = createCanvasRecorder(canvas);
 
 video.addEventListener('loadeddata', () => {
-    canvas.width = previewCanvas.width = video.videoWidth;
-    canvas.height = previewCanvas.height = video.videoHeight;
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    oldData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const { videoWidth: width, videoHeight: height } = video;
+    canvas.width = previewCanvas.width = width;
+    canvas.height = previewCanvas.height = height;
+    pixelArrayLen = width * height * 4;
+    oldData = prevFrame = new Uint8ClampedArray(pixelArrayLen).fill(255);
     if(record) recorder.start(1000 / recordingFrameRate);
     decode();
 })
@@ -43,19 +45,21 @@ video.addEventListener('ended', () => {
     if(record) recorder.stop();
 });
 
-const movingColor = [0, 0, 0];
-const staticColor = [255, 255, 255];
+const { movingColor, staticColor } = options;
 const preview = true;
 
-let oldData;
+let oldData, prevFrame, pixelArrayLen;
 function decode() {
     const { width, height } = canvas;
+    const { fillThreshold: threshold, colorChange } = options;
 
     if(preview) previewCtx.drawImage(video, 0, 0);
     ctx.drawImage(video, 0, 0);
 
     const newImageData = ctx.getImageData(0, 0, width, height);
-    const { data } = newImageData;
+    const { data: newData } = newImageData;
+
+    const data = new Uint8ClampedArray(pixelArrayLen).fill(255);
 
     const setMovingPixel = (index) => {
         data[index] = movingColor[0];
@@ -68,61 +72,100 @@ function decode() {
         data[index+2] = staticColor[2];
     }
 
+    let movingPixels = 0;
+    let staticPixels = 0;
     for(let i = 0; i < data.length; i+=4) {
-        if(data[i] !== oldData[i]) {
+        if(newData[i] !== oldData[i]) {
             setMovingPixel(i);
+            movingPixels++;
         } else {
             setStaticPixel(i)
+            staticPixels++;
         }
     }
-
-    const { value: threshold } = document.getElementById('threshold');
-    document.getElementById('thresholdValue').textContent = threshold;
 
     // Fill with threshold
-    for(let j = 0; j < height; j++) {
-        let min;
-        const checked = new Set();
-        for(let i = 0; i < width; i++) {
-            const index = (i + j * width) * 4;
-            if(checked.has(index)) continue;
-            if(data[index] == 0) {
-                if(typeof(min) !== 'number') {
-                    min = i;
-                } else if(i - min < threshold) {
-                    for(let x = min + 1; x < i + 1; x++) {
-                        const index = (x + j * width) * 4;
-                        checked.add(index);
-                        setMovingPixel(index);
+    const fill = (color, setColorFunction) => {
+        const checkColor = (index) => {
+            return ( data[index] === color[0] &&
+                     data[index+1] === color[1] &&
+                     data[index+2] === color[0] )
+        }
+
+        const fill = (i, j) => {
+            for(let x = i-1; x < i+2; x++) {
+                if(x < 0 || x >= width) continue;
+                for(let y = j-1; y < j+2; y++) {
+                    if(y < 0 || y >= height) continue;
+                    const index = (x + y * width) * 4;
+                    setColorFunction(index);
+                }
+            }
+        }
+
+        // Horizontal Fill
+        for(let j = 0; j < height; j++) {
+            let min;
+            const checked = new Set();
+            for(let i = 0; i < width; i++) {
+                const index = (i + j * width) * 4;
+                if(checked.has(index)) continue;
+                if(checkColor(index)) {
+                    if(typeof(min) !== 'number') {
+                        min = i;
+                    } else if(i - min < threshold) {
+                        for(let x = min + 1; x < i + 1; x++) {
+                            const index = (x + j * width) * 4;
+                            checked.add(index);
+                            setColorFunction(index);
+                            fill(x, j);
+                        }
+                        min = i;
                     }
-                    min = i;
+                }
+            }
+        }
+
+        // Vertical Fill
+        for(let i = 0; i < width; i++) {
+            let min;
+            const checked = new Set();
+            for(let j = 0; j < height; j++) {
+                const index = (i + j * width) * 4;
+                if(checked.has(index)) continue;
+                if(checkColor(index)) {
+                    if(typeof(min) !== 'number') {
+                        min = j;
+                    } else if(j - min < threshold) {
+                        for(let x = min + 1; x < j + 1; x++) {
+                            const index = (i + x * width) * 4;
+                            checked.add(index);
+                            setColorFunction(index);
+                            fill(i, x);
+                        }
+                        min = j;
+                    }
                 }
             }
         }
     }
-    for(let i = 0; i < width; i++) {
-        let min;
-        const checked = new Set();
-        for(let j = 0; j < height; j++) {
-            const index = (i + j * width) * 4;
-            if(checked.has(index)) continue;
-            if(data[index] == 0) {
-                if(typeof(min) !== 'number') {
-                    min = j;
-                } else if(j - min < threshold) {
-                    for(let x = min + 1; x < j + 1; x++) {
-                        const index = (i + x * width) * 4;
-                        checked.add(index);
-                        setMovingPixel(index);
-                    }
-                    min = j;
-                }
-            }
-        }
+
+    if(threshold > 0) {
+        fill(movingPixels < staticPixels ? (movingColor, setMovingPixel) : (staticColor, setStaticPixel));
     }
 
     oldData = ctx.getImageData(0, 0, width, height).data;
-    ctx.putImageData(newImageData, 0, 0);
+
+    const convertionRate = colorChange;
+    const convertedData = new Uint8ClampedArray(pixelArrayLen).fill(255);
+    for(let i = 0; i < data.length; i+=4) {
+        convertedData[i] = lerp(prevFrame[i], data[i], convertionRate);
+        convertedData[i+1] = lerp(prevFrame[i+1], data[i+1], convertionRate);
+        convertedData[i+2] = lerp(prevFrame[i+2], data[i+2], convertionRate);
+    }
+    prevFrame = convertedData;
+
+    ctx.putImageData(new ImageData(convertedData, width, height), 0, 0);
 
     video.requestVideoFrameCallback(decode);
 }
