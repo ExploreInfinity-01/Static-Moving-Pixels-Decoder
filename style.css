@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+body {
+    zoom: 0.75;
+}
+
 canvas {
     margin: 10px;
 }
@@ -67,7 +71,7 @@ canvas {
 }
 
 .container input[type="range"] {
-    width: 250px;
+    width: 150px;
 }
 
 .container input[type="color"] {
