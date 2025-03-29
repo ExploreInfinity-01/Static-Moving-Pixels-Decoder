@@ -11,14 +11,14 @@ const thresholdInput = document.getElementById('threshold');
 const thresholdValueShower = document.getElementById('thresholdValue');
 thresholdInput.addEventListener('input', ({ target }) => {
     const { value } = target;
-    options.fillThreshold = thresholdValueShower.textContent = value;
+    options.fillThreshold = thresholdValueShower.textContent = Number(value);
 });
 
 const colorChangeInput = document.getElementById('colorChange');
 const colorChangeValueShower = document.getElementById('colorChangeValue');
 colorChangeInput.addEventListener('input', ({ target }) => {
     const { value } = target;
-    options.colorChange = colorChangeValueShower.textContent = value;
+    options.colorChange = colorChangeValueShower.textContent = Number(value);
 });
 
 const movingColorInput = document.getElementById('movingColor');

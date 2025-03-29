@@ -85,11 +85,11 @@ function decode() {
     }
 
     // Fill with threshold
-    const fill = (color, setColorFunction) => {
+    function fill({color, setColorFunction}) {
         const checkColor = (index) => {
             return ( data[index] === color[0] &&
                      data[index+1] === color[1] &&
-                     data[index+2] === color[0] )
+                     data[index+2] === color[2] )
         }
 
         const fill = (i, j) => {
@@ -114,11 +114,11 @@ function decode() {
                     if(typeof(min) !== 'number') {
                         min = i;
                     } else if(i - min < threshold) {
-                        for(let x = min + 1; x < i + 1; x++) {
+                        for(let x = min + 1; x < i; x++) {
                             const index = (x + j * width) * 4;
                             checked.add(index);
                             setColorFunction(index);
-                            fill(x, j);
+                            // fill(x, j);
                         }
                         min = i;
                     }
@@ -141,7 +141,7 @@ function decode() {
                             const index = (i + x * width) * 4;
                             checked.add(index);
                             setColorFunction(index);
-                            fill(i, x);
+                            // fill(i, x);
                         }
                         min = j;
                     }
@@ -151,7 +151,9 @@ function decode() {
     }
 
     if(threshold > 0) {
-        fill(movingPixels < staticPixels ? (movingColor, setMovingPixel) : (staticColor, setStaticPixel));
+        fill( movingPixels < staticPixels ? 
+             { color: movingColor, setColorFunction: setMovingPixel } : 
+             { color: staticColor, setColorFunction: setStaticPixel });
     }
 
     oldData = ctx.getImageData(0, 0, width, height).data;
