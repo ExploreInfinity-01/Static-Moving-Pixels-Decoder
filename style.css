@@ -71,7 +71,7 @@ canvas {
 }
 
 .container input[type="range"] {
-    width: 150px;
+    width: 250px;
 }
 
 .container input[type="color"] {
