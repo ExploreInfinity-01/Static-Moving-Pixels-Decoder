@@ -84,6 +84,8 @@ function decode() {
         }
     }
 
+    // const fillArray = new Uint8ClampedArray(pixelArrayLen).fill(255);
+
     // Fill with threshold
     function fill({color, setColorFunction}) {
         const checkColor = (index) => {
@@ -92,6 +94,13 @@ function decode() {
                      data[index+2] === color[2] )
         }
 
+        // This array is for testing
+        // const fillDataArray = (index) => {
+        //     fillArray[index] = color[0];
+        //     fillArray[index+1] = color[1];
+        //     fillArray[index+2] = color[2];
+        // }
+
         const fill = (i, j) => {
             for(let x = i-1; x < i+2; x++) {
                 if(x < 0 || x >= width) continue;
@@ -99,6 +108,7 @@ function decode() {
                     if(y < 0 || y >= height) continue;
                     const index = (x + y * width) * 4;
                     setColorFunction(index);
+                    // fillDataArray(index);
                 }
             }
         }
@@ -118,9 +128,9 @@ function decode() {
                             const index = (x + j * width) * 4;
                             checked.add(index);
                             setColorFunction(index);
-                            // fill(x, j);
+                            fill(x, j);
                         }
-                        min = i;
+                        min = null;
                     }
                 }
             }
@@ -137,13 +147,13 @@ function decode() {
                     if(typeof(min) !== 'number') {
                         min = j;
                     } else if(j - min < threshold) {
-                        for(let x = min + 1; x < j + 1; x++) {
+                        for(let x = min + 1; x < j; x++) {
                             const index = (i + x * width) * 4;
                             checked.add(index);
                             setColorFunction(index);
-                            // fill(i, x);
+                            fill(i, x);
                         }
-                        min = j;
+                        min = null;
                     }
                 }
             }
